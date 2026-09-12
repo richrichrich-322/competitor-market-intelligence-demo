@@ -738,6 +738,7 @@
       return competitors.slice(0,Math.min(competitors.length,state.topN+1));
     }
     function scopedCompetitors(){
+      const sampleFactor=state.sample==='fixed'?.94:1;
       const profiles={
         '全部品牌':{sales:1,price:0,rating:0},'Control Arm':{sales:1.08,price:1.2,rating:.02},'Wheel Bearing':{sales:.82,price:-2.1,rating:-.03},
         'Brake Caliper':{sales:.68,price:8.4,rating:.04},'Strut Assembly':{sales:.61,price:15.6,rating:-.01},'Window Regulator':{sales:.47,price:-4.2,rating:-.06}
@@ -749,7 +750,7 @@
       }
       return currentCompetitors().map((x,seriesIndex)=>({
         ...x,
-        sales:x.sales.map((v,i)=>Math.max(1,Math.round(v*p.sales*(1+(i-3)*.008+(seriesIndex%3)*.004)))),
+        sales:x.sales.map((v,i)=>Math.max(1,Math.round(v*p.sales*sampleFactor*(1+(i-3)*.008+(seriesIndex%3)*.004+(state.sample==='fixed'?(3-i)*.006:0))))),
         price:x.price.map(v=>+(v+p.price+(seriesIndex%2)*.15).toFixed(1)),
         rating:x.rating.map(v=>+Math.min(5,Math.max(1,v+p.rating)).toFixed(2))
       }));
