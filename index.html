@@ -526,7 +526,7 @@
         <div class="page-head"><div><div class="eyebrow">Strategy workbench</div><h1 id="strategyTitle">建议是选项，不是命令。</h1><p class="lede">系统整理证据和约束，运营选择动作。当前卡片来自“竞对断货窗口”，所有经济性数值均为合成演示数据。</p></div><button class="context-pill pressable" id="changeOpportunity">切换机会 · <span id="strategyOpId">OP-2407</span></button></div>
         <div class="strategy-layout">
           <div>
-            <article class="card" style="margin-bottom:.8rem"><div class="card-title-row"><div><div class="card-kicker">当前机会</div><h2 id="strategyOpportunityTitle">Control Arm · 竞对断货窗口</h2><p class="card-note">3 个竞对 ASIN 连续两个截面断货；我方 2 个映射 ASIN 可售，评分差距 ≤0.1。</p></div><span class="tag green">可信度 86%</span></div><div class="evidence"><div class="evidence-item"><span>机会有效期</span><strong>预计 9 天</strong></div><div class="evidence-item"><span>影响样本销量</span><strong>4,820 / 月</strong></div><div class="evidence-item"><span>我方可售库存</span><strong>1,460 件</strong></div><div class="evidence-item"><span>替代解释</span><strong>抓取异常 12%</strong></div></div></article>
+            <article class="card" style="margin-bottom:.8rem"><div class="card-title-row"><div><div class="card-kicker">当前机会</div><h2 id="strategyOpportunityTitle">Control Arm · 竞对断货窗口</h2><p class="card-note" id="strategyOpportunityNote">3 个竞对 ASIN 连续两个截面断货；我方 2 个映射 ASIN 可售，评分差距 ≤0.1。</p></div><span class="tag green" id="strategyConfidence">可信度 86%</span></div><div class="evidence" id="strategyEvidence"></div></article>
             <article class="card"><div class="card-title-row"><div><div class="card-kicker">动作选项</div><h2>选择一个执行假设</h2></div><span class="tag purple">建议先小流量测试</span></div><div class="strategy-list" id="strategyOptions"></div><div class="decision-bar"><button class="primary-btn" data-decision="接受执行">接受并创建实验</button><button class="secondary-btn" data-decision="修改">修改</button><button class="ghost-btn" data-decision="暂缓">暂缓</button><button class="danger-btn" data-decision="拒绝">拒绝</button></div></article>
           </div>
           <aside>
@@ -540,7 +540,7 @@
         <div class="page-head"><div><div class="eyebrow">Execution & learning</div><h1 id="executionTitle">记录结果，才能改进判断。</h1><p class="lede">比较动作前后及实验组与对照组，区分运营动作、市场变化和样本覆盖变化。</p></div><span class="context-pill">本月已关闭 12 个机会</span></div>
         <div class="kpi-grid" id="executionKpis"></div>
         <div class="grid-2"><article class="card"><div class="card-title-row"><div><div class="card-kicker">实验效果</div><h2>实验组与对照组样本份额</h2><p class="card-note">虚线位置为动作开始日</p></div><span class="tag purple">EXP-0721</span></div><div class="chart-wrap" id="executionChart"></div></article><article class="card"><div class="card-title-row"><div><div class="card-kicker">规则表现</div><h2>机会识别有效性</h2></div><button class="text-btn" data-drawer="learning">查看复盘</button></div><div class="ring-wrap"><svg class="ring-svg" viewBox="0 0 120 120"><circle class="ring-track" cx="60" cy="60" r="48"/><circle class="ring-value" cx="60" cy="60" r="48" pathLength="100" stroke-dasharray="68 100"/></svg><div class="ring-center"><div class="ring-number">68%</div><div class="ring-label">有效机会率</div></div></div><div class="mini-stats"><div class="mini-stat"><b>24</b><span>已判断</span></div><div class="mini-stat"><b>16</b><span>有效</span></div><div class="mini-stat"><b>5</b><span>需校准</span></div></div></article></div>
-        <article class="card"><div class="card-title-row"><div><div class="card-kicker">任务与实验</div><h2>正在执行</h2></div><select class="select"><option>全部状态</option><option>进行中</option><option>待复盘</option><option>已完成</option></select></div><div class="progress-list" id="taskList"></div></article>
+        <article class="card"><div class="card-title-row"><div><div class="card-kicker">任务与实验</div><h2>正在执行</h2></div><select class="select" id="executionStatus" aria-label="执行状态"><option>全部状态</option><option>待开始</option><option>进行中</option><option>待复盘</option><option>已完成</option></select></div><div class="progress-list" id="taskList"></div></article>
       </section>
     </div>
   </main>
@@ -642,7 +642,7 @@
     const state = {
       page:'market', sample:'observed', marketScope:'ALL', brandSort:'asin', lifeMode:'month',
       compDimension:'store', compObject:'全部品牌', topN:5, customNames:null, metric:'price', salesMode:'absolute',
-      opFilter:'全部', opSort:'score', selectedOpportunity:'OP-2407', selectedStrategy:0,
+      opFilter:'全部', opSort:'score', selectedOpportunity:'OP-2407', selectedStrategy:0, executionStatus:'全部状态',
       hiddenSeries:new Set(), decision: localStorage.getItem('demo-decision') || ''
     };
 
@@ -737,9 +737,26 @@
       if(state.customNames) return competitors.filter(x=>x.name==='A-Premium'||state.customNames.includes(x.name));
       return competitors.slice(0,Math.min(competitors.length,state.topN+1));
     }
+    function scopedCompetitors(){
+      const profiles={
+        '全部品牌':{sales:1,price:0,rating:0},'Control Arm':{sales:1.08,price:1.2,rating:.02},'Wheel Bearing':{sales:.82,price:-2.1,rating:-.03},
+        'Brake Caliper':{sales:.68,price:8.4,rating:.04},'Strut Assembly':{sales:.61,price:15.6,rating:-.01},'Window Regulator':{sales:.47,price:-4.2,rating:-.06}
+      };
+      let p=profiles[state.compObject]||profiles['全部品牌'];
+      if(state.compDimension==='asin'){
+        const index=['B0DEMO7A1 · Control Arm','B0DEMO6W3 · Wheel Bearing','B0DEMO8C2 · Brake Caliper'].indexOf(state.compObject);
+        p=[{sales:.14,price:0,rating:.01},{sales:.11,price:-2.6,rating:-.02},{sales:.09,price:7.8,rating:.03}][Math.max(0,index)];
+      }
+      return currentCompetitors().map((x,seriesIndex)=>({
+        ...x,
+        sales:x.sales.map((v,i)=>Math.max(1,Math.round(v*p.sales*(1+(i-3)*.008+(seriesIndex%3)*.004)))),
+        price:x.price.map(v=>+(v+p.price+(seriesIndex%2)*.15).toFixed(1)),
+        rating:x.rating.map(v=>+Math.min(5,Math.max(1,v+p.rating)).toFixed(2))
+      }));
+    }
     function metricValue(v,key){ if(key==='price')return `$${v.toFixed(2)}`; if(key==='rating')return v.toFixed(2); if(key==='bsr')return `#${fmt(Math.round(v))}`; return `${fmt(Math.round(v))}${metricDefs[key].unit?' '+metricDefs[key].unit:''}`; }
     function renderCompetitorCharts(){
-      const list=currentCompetitors();
+      const list=scopedCompetitors();
       let salesSeries=list.map(x=>({name:x.name,color:x.color,data:[...x.sales]}));
       if(state.salesMode==='share'){
         salesSeries=salesSeries.map((s,si)=>({ ...s, data:s.data.map((v,i)=>+(v/list.reduce((sum,c)=>sum+c.sales[i],0)*100).toFixed(1)) }));
@@ -757,7 +774,7 @@
         svg.addEventListener('pointermove',e=>{
           const r=svg.getBoundingClientRect(), px=(e.clientX-r.left)/r.width*700, idx=Math.max(0,Math.min(6,Math.round((px-48)/(700-48-16)*6))), x=48+idx/6*(700-48-16);
           charts.forEach(c=>{ const line=$('.crosshair',c); if(line){ line.setAttribute('x1',x);line.setAttribute('x2',x);line.style.opacity='1'; }});
-          const top=currentCompetitors()[0], rival=currentCompetitors()[1]; $('#syncTip').textContent=`${MONTHS[idx]} · A-Premium ${fmt(top.sales[idx])} · ${rival.name} ${fmt(rival.sales[idx])}`;
+          const top=scopedCompetitors()[0], rival=scopedCompetitors()[1]; $('#syncTip').textContent=`${MONTHS[idx]} · A-Premium ${fmt(top.sales[idx])} · ${rival.name} ${fmt(rival.sales[idx])}`;
         });
         svg.addEventListener('pointerleave',()=>{charts.forEach(c=>{const line=$('.crosshair',c);if(line)line.style.opacity='0';});$('#syncTip').textContent='悬停图表查看同月对照';});
       });
@@ -792,6 +809,12 @@
       {title:'仅监控，暂不行动',desc:'保持现有价格和广告，继续确认竞对断货是否持续，避免针对一次抓取异常做出动作。',tags:['成本最低','每日复查','失效阈值 48h']}
     ];
     function renderStrategy(){
+      const opportunity=opportunities.find(o=>o.id===state.selectedOpportunity)||opportunities[0];
+      $('#strategyOpId').textContent=opportunity.id;
+      $('#strategyOpportunityTitle').textContent=opportunity.title;
+      $('#strategyOpportunityNote').textContent=opportunity.desc;
+      $('#strategyConfidence').textContent=`可信度 ${opportunity.confidence}%`;
+      $('#strategyEvidence').innerHTML=`<div class="evidence-item"><span>机会有效期</span><strong>预计 ${opportunity.expiry} 天</strong></div><div class="evidence-item"><span>影响范围</span><strong>${opportunity.impact}</strong></div><div class="evidence-item"><span>所属范围</span><strong>${opportunity.scope}</strong></div><div class="evidence-item"><span>替代解释</span><strong>${opportunity.alternative}</strong></div>`;
       $('#strategyOptions').innerHTML=strategyOptions.map((o,i)=>`<label class="strategy-option ${state.selectedStrategy===i?'selected':''}"><input type="radio" name="strategy" ${state.selectedStrategy===i?'checked':''}><div class="strategy-option-head"><div class="strategy-option-title"><i class="strategy-radio"></i>${o.title}</div><span class="tag">方案 ${String.fromCharCode(65+i)}</span></div><p>${o.desc}</p><div class="option-metrics">${o.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div></label>`).join('');
       $$('.strategy-option').forEach((el,i)=>el.addEventListener('click',()=>{state.selectedStrategy=i;renderStrategy();}));
       const guards=[['毛利','贡献毛利 ≥18%','通过','green'],['库存','预计可售 23 天','通过','green'],['售后','退货率 2.4%','通过','green'],['合规/IP','需要负责人复核','待复核','amber']];
@@ -809,11 +832,15 @@
       const kpis=[['进行中实验',state.decision==='接受执行'?4:3,'个','1 个等待复核','up',[55,62,58,70,76,84,90]],['本月有效机会率',68,'%','较上月 +7pct','up',[50,54,57,59,62,65,68]],['已验证增量份额',1.4,'pct','固定同样本口径','flat',[42,46,48,57,64,72,78]],['待复盘',5,'个','最早 2 天后到期','flat',[70,65,62,57,54,49,45]]];
       $('#executionKpis').innerHTML=kpis.map(x=>`<article class="card kpi"><div><div class="kpi-top"><span>${x[0]}</span>${sparkline(x[5])}</div><div class="kpi-value">${fmt(x[1])} <small>${x[2]}</small></div></div><div class="delta ${x[4]}">${x[4]==='up'?'↗':'•'} ${x[3]}</div></article>`).join('');
       lineChart($('#executionChart'),[{name:'实验组份额',data:[12.1,12.2,12.3,12.7,13.0,13.4,13.6],color:'#b9a7ff'},{name:'对照组份额',data:[12.0,12.1,12.2,12.2,12.3,12.2,12.4],color:'#8b8b96'}],{label:'实验效果',formatY:v=>pct(v),tooltipFmt:v=>pct(v)});
-      const tasks=[
+      let tasks=[
         ['Control Arm · 广告接管','EXP-0721','进行中','62%','李运营'],['Brake Caliper · 价格测试','EXP-0718','待复盘','100%','王运营'],['Wheel Bearing · Listing 优化','EXP-0715','进行中','41%','陈运营']
       ];
-      if(state.decision==='接受执行') tasks.unshift(['Control Arm · 新建策略实验','EXP-0728','待开始','4%','待分配']);
-      $('#taskList').innerHTML=tasks.map(t=>`<div class="task-row"><div><div class="task-title">${t[0]}</div><div class="task-sub">${t[1]}</div></div><span class="tag">${t[2]}</span><div class="progress-track"><i style="--w:${t[3]}"></i></div><span>${t[3]}</span><span class="tag purple">${t[4]}</span></div>`).join('');
+      if(state.decision==='接受执行'){
+        const opportunity=opportunities.find(o=>o.id===state.selectedOpportunity)||opportunities[0];
+        tasks.unshift([`${opportunity.scope} · 新建策略实验`,'EXP-0728','待开始','4%','待分配']);
+      }
+      if(state.executionStatus!=='全部状态') tasks=tasks.filter(t=>t[2]===state.executionStatus);
+      $('#taskList').innerHTML=tasks.map(t=>`<div class="task-row"><div><div class="task-title">${t[0]}</div><div class="task-sub">${t[1]}</div></div><span class="tag">${t[2]}</span><div class="progress-track"><i style="--w:${t[3]}"></i></div><span>${t[3]}</span><span class="tag purple">${t[4]}</span></div>`).join('')||'<div class="card-note">当前状态下没有任务。</div>';
     }
 
     const drawer=$('#drawer'), scrim=$('#scrim'); let drawerX=600, drawerRaf=0, lastFocus=null;
@@ -886,6 +913,7 @@
     $$('[data-sales-mode]').forEach(b=>b.addEventListener('click',()=>{state.salesMode=b.dataset.salesMode;$$('[data-sales-mode]').forEach(x=>x.classList.toggle('active',x===b));renderCompetitorCharts();}));
     $('#opFilters').addEventListener('click',e=>{const b=e.target.closest('[data-op-filter]');if(!b)return;state.opFilter=b.dataset.opFilter;$$('[data-op-filter]').forEach(x=>x.classList.toggle('active',x===b));renderOpportunities();});
     $('#opSort').addEventListener('change',e=>{state.opSort=e.target.value;renderOpportunities();});
+    $('#executionStatus').addEventListener('change',e=>{state.executionStatus=e.target.value;renderExecution();});
     $$('[data-decision]').forEach(b=>b.addEventListener('click',()=>applyDecision(b.dataset.decision)));
     $('#changeOpportunity').addEventListener('click',()=>navigate('opportunities'));
     $('#dictionaryBtn').addEventListener('click',openDictionary); $('#exportBtn').addEventListener('click',()=>exportCsv());
